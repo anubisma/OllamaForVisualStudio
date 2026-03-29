@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable"
+              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<Extern href="stdidcmd.h"/>
+	<Extern href="vsshlids.h"/>
+
+	<Commands package="guidOllamaChatPackage">
+		<Groups>
+			<Group guid="guidOllamaChatPackageCmdSet" id="OllamaMenuGroup" priority="0x0600">
+				<Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_VIEW"/>
+			</Group>
+		</Groups>
+
+		<Buttons>
+			<Button guid="guidOllamaChatPackageCmdSet" id="OllamaChatCommandId" priority="0x0100" type="Button">
+				<Parent guid="guidOllamaChatPackageCmdSet" id="OllamaMenuGroup"/>
+				<Strings>
+					<ButtonText>Ollama Chat</ButtonText>
+				</Strings>
+			</Button>
+		</Buttons>
+	</Commands>
+
+	<Symbols>
+		<GuidSymbol name="guidOllamaChatPackage" value="{E8F5C9A1-2B3D-4E5F-6A7B-8C9D0E1F2A3B}"/>
+		<GuidSymbol name="guidOllamaChatPackageCmdSet" value="{B2C3D4E5-F6A7-8901-BCDE-F12345678901}">
+			<IDSymbol name="OllamaMenuGroup" value="0x1020"/>
+			<IDSymbol name="OllamaChatCommandId" value="0x0100"/>
+		</GuidSymbol>
+	</Symbols>
+</CommandTable>
