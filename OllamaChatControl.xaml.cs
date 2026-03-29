@@ -305,39 +305,75 @@ namespace OllamaForVisualStudio
 
             UserInput.Clear();
 
-            // Construir mensaje con contexto de archivos
             var fullMessage = BuildMessageWithContext(userMessage);
-
-            // Mostrar mensaje del usuario (solo la pregunta, no el contexto)
             AddUserMessage(userMessage, _attachedFiles.Select(f => f.FileName).ToList());
 
-            _currentAssistantMessage = CreateAssistantMessageBlock();
+            // Mostrar indicador de "pensando"
+            var thinkingBlock = CreateThinkingIndicator();
+
             _cancellationTokenSource = new CancellationTokenSource();
             SetUIState(isProcessing: true);
 
+            bool firstChunkReceived = false;
+
             try
             {
-                await _apiClient.StreamChatAsync(
-                    selectedModel,
-                    fullMessage,
-                    GetSystemPrompt(),
-                    chunk => Dispatcher.Invoke(() => AppendToCurrentMessage(chunk)),
-                    _cancellationTokenSource.Token);
+                await Task.Run(async () =>
+                {
+                    await _apiClient.StreamChatAsync(
+                        selectedModel,
+                        fullMessage,
+                        GetSystemPrompt(),
+                        chunk =>
+                        {
+                            Dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                // Reemplazar indicador de pensando con el bloque de respuesta al recibir el primer chunk
+                                if (!firstChunkReceived)
+                                {
+                                    firstChunkReceived = true;
+                                    MessagesPanel.Items.Remove(thinkingBlock);
+                                    _currentAssistantMessage = CreateAssistantMessageBlock();
+                                }
+                                AppendToCurrentMessage(chunk);
+                            }));
+                        },
+                        _cancellationTokenSource.Token);
+                });
             }
             catch (OperationCanceledException)
             {
-                AppendToCurrentMessage("\n\n[Cancelado]");
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!firstChunkReceived)
+                    {
+                        MessagesPanel.Items.Remove(thinkingBlock);
+                        _currentAssistantMessage = CreateAssistantMessageBlock();
+                    }
+                    AppendToCurrentMessage("\n\n[Cancelado]");
+                }));
             }
             catch (Exception ex)
             {
-                AppendToCurrentMessage(string.Format("\n\n❌ Error: {0}", ex.Message));
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (MessagesPanel.Items.Contains(thinkingBlock))
+                    {
+                        MessagesPanel.Items.Remove(thinkingBlock);
+                    }
+
+                    if (_currentAssistantMessage == null)
+                    {
+                        _currentAssistantMessage = CreateAssistantMessageBlock();
+                    }
+                    AppendToCurrentMessage(string.Format("❌ Error: {0}", ex.Message));
+                }));
             }
             finally
             {
                 SetUIState(isProcessing: false);
                 _currentAssistantMessage = null;
 
-                // Limpiar archivos adjuntos después de enviar
                 _attachedFiles.Clear();
                 UpdateAttachmentsUI();
 
@@ -348,7 +384,46 @@ namespace OllamaForVisualStudio
                 }
             }
         }
+        private Border CreateThinkingIndicator()
+        {
+            var border = new Border
+            {
+                Background = new SolidColorBrush(Color.FromRgb(45, 45, 48)),
+                CornerRadius = new CornerRadius(12, 12, 12, 0),
+                Padding = new Thickness(14, 10, 14, 10),
+                Margin = new Thickness(0, 8, 40, 8),
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
 
+            var stack = new StackPanel { Orientation = Orientation.Horizontal };
+
+            var dots = new TextBlock
+            {
+                Text = "🤖 Pensando",
+                Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = 13,
+                FontStyle = FontStyles.Italic
+            };
+
+            // Animación simple de puntos
+            var dotsAnimation = new TextBlock
+            {
+                Text = "...",
+                Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = 13
+            };
+
+            stack.Children.Add(dots);
+            stack.Children.Add(dotsAnimation);
+            border.Child = stack;
+
+            MessagesPanel.Items.Add(border);
+            ScrollToBottom();
+
+            return border;
+        }
         private string BuildMessageWithContext(string userMessage)
         {
             if (_attachedFiles.Count == 0)

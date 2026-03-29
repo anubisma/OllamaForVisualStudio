@@ -79,6 +79,119 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Estilo para ComboBox con tema de VS -->
+        <!-- Estilo completo para ComboBox con tema de VS -->
+        <Style x:Key="ThemedComboBox" TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxTextBrushKey}}"/>
+            <Setter Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBackgroundBrushKey}}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBorderBrushKey}}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                  Grid.Column="2"
+                                  Focusable="false"
+                                  IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                  ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Border"
+                                        Background="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBackgroundBrushKey}}"
+                                        BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBorderBrushKey}}"
+                                        BorderThickness="1"
+                                        CornerRadius="2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Path x:Name="Arrow"
+                                              Grid.Column="1"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Data="M 0 0 L 4 4 L 8 0 Z"
+                                              Fill="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxGlyphBrushKey}}"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Border" Property="Background" 
+                                                Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxMouseOverBackgroundBeginBrushKey}}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter x:Name="ContentSite"
+                                      IsHitTestVisible="False"
+                                      Content="{TemplateBinding SelectionBoxItem}"
+                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                      Margin="8,4,28,4"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Left"/>
+
+                            <Popup x:Name="Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Slide">
+                                <Grid x:Name="DropDown"
+                              SnapsToDevicePixels="True"
+                              MinWidth="{TemplateBinding ActualWidth}"
+                              MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder"
+                                    Background="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxPopupBackgroundBeginBrushKey}}"
+                                    BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBorderBrushKey}}"
+                                    BorderThickness="1"/>
+                                    <ScrollViewer Margin="2" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Background" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxPopupBackgroundBeginBrushKey}}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxTextBrushKey}}"/>
+                        <Setter Property="Padding" Value="6,4"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ComboBoxItem">
+                                    <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Border" Property="Background" 
+                                            Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxMouseOverBackgroundBeginBrushKey}}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Border" Property="Background" 
+                                            Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxMouseDownBackgroundBrushKey}}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -106,9 +219,7 @@
                 <ComboBox x:Name="ModelComboBox" 
                           Grid.Column="0"
                           VerticalAlignment="Center"
-                          Background="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBackgroundBrushKey}}"
-                          Foreground="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxTextBrushKey}}"
-                          BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBorderBrushKey}}"/>
+                          Style="{StaticResource ThemedComboBox}"/>
 
                 <Button x:Name="RefreshModelsButton" 
                         Grid.Column="1"
