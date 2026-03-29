@@ -15,7 +15,7 @@
     <RootNamespace>OllamaForVisualStudio</RootNamespace>
     <AssemblyName>OllamaForVisualStudio</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>8.0</LangVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <UseCodebase>true</UseCodebase>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
