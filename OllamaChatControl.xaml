@@ -80,7 +80,6 @@
             </Setter>
         </Style>
 
-        <!-- Estilo para ComboBox con tema de VS -->
         <!-- Estilo completo para ComboBox con tema de VS -->
         <Style x:Key="ThemedComboBox" TargetType="ComboBox">
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxTextBrushKey}}"/>
@@ -192,6 +191,34 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Estilo para items del popup de archivos -->
+        <Style x:Key="FileListItem" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#0E639C"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -229,7 +256,7 @@
                         Width="32" Height="32"
                         Margin="8,0,0,0"
                         Click="RefreshModelsButton_Click" 
-                        ToolTip="Actualizar modelos"/>
+                        ToolTip="Refresh models"/>
 
                 <Button x:Name="ClearButton" 
                         Grid.Column="2"
@@ -239,7 +266,7 @@
                         Width="32" Height="32"
                         Margin="4,0,0,0"
                         Click="ClearButton_Click"
-                        ToolTip="Limpiar conversación"/>
+                        ToolTip="Clear conversation"/>
             </Grid>
         </Border>
 
@@ -267,7 +294,7 @@
                 Padding="12,8"
                 Visibility="Collapsed">
             <StackPanel>
-                <TextBlock Text="📎 Archivos adjuntos:" 
+                <TextBlock Text="📎 Attached files:" 
                            FontSize="11" 
                            Foreground="{DynamicResource {x:Static vs:EnvironmentColors.ToolWindowTextBrushKey}}"
                            Margin="0,0,0,6"/>
@@ -293,7 +320,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Input de texto -->
+                <!-- Input de texto con popup de autocompletado -->
                 <Border Grid.Row="0" 
                         Background="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBackgroundBrushKey}}"
                         BorderBrush="{DynamicResource {x:Static vs:EnvironmentColors.ComboBoxBorderBrushKey}}"
@@ -314,38 +341,73 @@
                                  FontFamily="Segoe UI, sans-serif"
                                  FontSize="13"
                                  VerticalAlignment="Center"
-                                 KeyDown="UserInput_KeyDown"/>
+                                 KeyDown="UserInput_KeyDown"
+                                 PreviewKeyDown="UserInput_PreviewKeyDown"/>
 
                         <!-- Placeholder -->
                         <TextBlock x:Name="PlaceholderText"
-                                   Text="Pregunta algo... (usa @ para mencionar archivos)"
+                                   Text="Ask something... (use # to mention files)"
                                    Foreground="{DynamicResource {x:Static vs:EnvironmentColors.CommandBarTextInactiveBrushKey}}"
                                    Padding="14,12"
                                    FontFamily="Segoe UI, sans-serif"
                                    FontSize="13"
                                    IsHitTestVisible="False"
                                    Visibility="Visible"/>
+
+                        <!-- Popup de autocompletado de archivos -->
+                        <Popup x:Name="FileAutocompletePopup"
+                               PlacementTarget="{Binding ElementName=UserInput}"
+                               Placement="Top"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade">
+                            <Border Background="#2D2D30"
+                                    BorderBrush="#3F3F46"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    MaxHeight="250"
+                                    MinWidth="300">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" 
+                                               Text="📁 Project files" 
+                                               FontSize="11"
+                                               Foreground="#888"
+                                               Padding="10,8,10,4"/>
+
+                                    <ListBox x:Name="FileAutocompleteList"
+                                             Grid.Row="1"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             ItemContainerStyle="{StaticResource FileListItem}"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             MaxHeight="200"
+                                             SelectionChanged="FileAutocompleteList_SelectionChanged"
+                                             MouseDoubleClick="FileAutocompleteList_MouseDoubleClick"/>
+                                </Grid>
+                            </Border>
+                        </Popup>
                     </Grid>
                 </Border>
 
-                <!-- Botones de acción -->
+                <!-- Botones de acción (sin botón de adjuntar) -->
                 <Grid Grid.Row="1" Margin="0,8,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Botón adjuntar archivo -->
-                    <Button x:Name="AttachFileButton" 
-                            Grid.Column="0"
-                            Style="{StaticResource ModernButton}"
-                            Content="📎 Adjuntar" 
-                            Padding="10,6"
-                            Click="AttachFileButton_Click"
-                            ToolTip="Adjuntar archivo del proyecto (Ctrl+Shift+A)"/>
+                    <TextBlock Grid.Column="0" 
+                               Text="Use # to mention files"
+                               FontSize="11"
+                               Foreground="{DynamicResource {x:Static vs:EnvironmentColors.CommandBarTextInactiveBrushKey}}"
+                               VerticalAlignment="Center"/>
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button x:Name="StopButton" 
                                 Style="{StaticResource ModernButton}"
                                 Content="■ Detener" 

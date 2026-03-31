@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Documents;
 
 namespace OllamaForVisualStudio
 {
@@ -22,6 +23,14 @@ namespace OllamaForVisualStudio
         private CancellationTokenSource _cancellationTokenSource;
         private TextBlock _currentAssistantMessage;
         private readonly List<AttachedFile> _attachedFiles = new List<AttachedFile>();
+        private StackPanel _currentAssistantContentPanel;
+        private string _currentAssistantText = "";
+
+        // Autocompletado de archivos
+        private List<ProjectFile> _allProjectFiles = new List<ProjectFile>();
+        private int _hashPosition = -1;
+        private bool _isAutocompleteActive = false;
+        private bool _isInitialized = false; // Nueva variable
 
         public OllamaChatControl()
         {
@@ -35,35 +44,378 @@ namespace OllamaForVisualStudio
             PlaceholderText.Visibility = string.IsNullOrEmpty(UserInput.Text)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+
+            // Detectar # para autocompletado
+            HandleHashAutocomplete();
         }
+
+        #region Autocompletado con #
+
+        private void HandleHashAutocomplete()
+        {
+            var text = UserInput.Text;
+            var caretIndex = UserInput.CaretIndex;
+
+            if (string.IsNullOrEmpty(text) || caretIndex == 0)
+            {
+                FileAutocompletePopup.IsOpen = false;
+                return;
+            }
+
+            // Buscar el último # antes del cursor
+            int hashPos = -1;
+            for (int i = caretIndex - 1; i >= 0; i--)
+            {
+                char c = text[i];
+                if (c == '#')
+                {
+                    // Verificar que el # esté al inicio o después de un espacio/nueva línea
+                    if (i == 0 || text[i - 1] == ' ' || text[i - 1] == '\n' || text[i - 1] == '\r')
+                    {
+                        hashPos = i;
+                    }
+                    break;
+                }
+                // Si encontramos espacio o nueva línea, no hay # activo
+                if (c == ' ' || c == '\n' || c == '\r')
+                {
+                    break;
+                }
+            }
+
+            if (hashPos >= 0)
+            {
+                _hashPosition = hashPos;
+                _isAutocompleteActive = true;
+
+                // Recargar archivos si la lista está vacía
+                if (_allProjectFiles.Count == 0)
+                {
+                    LoadProjectFiles();
+                }
+
+                // Extraer el filtro (texto después del #)
+                var filter = text.Substring(hashPos + 1, caretIndex - hashPos - 1).ToLower().Trim();
+
+                // Filtrar archivos
+                List<ProjectFile> filteredFiles;
+                if (string.IsNullOrEmpty(filter))
+                {
+                    // Mostrar todos los archivos si solo escribió #
+                    filteredFiles = _allProjectFiles.Take(15).ToList();
+                }
+                else
+                {
+                    filteredFiles = _allProjectFiles
+                        .Where(f => f.FileName.ToLower().StartsWith(filter) ||
+                                    f.FileName.ToLower().Contains(filter))
+                        .OrderBy(f => !f.FileName.ToLower().StartsWith(filter))
+                        .ThenBy(f => f.FileName)
+                        .Take(15)
+                        .ToList();
+                }
+
+                if (filteredFiles.Count > 0)
+                {
+                    FileAutocompleteList.ItemsSource = filteredFiles;
+                    FileAutocompleteList.SelectedIndex = 0;
+                    FileAutocompletePopup.IsOpen = true;
+                }
+                else
+                {
+                    FileAutocompletePopup.IsOpen = false;
+                }
+            }
+            else
+            {
+                _isAutocompleteActive = false;
+                _hashPosition = -1;
+                FileAutocompletePopup.IsOpen = false;
+            }
+        }
+
+        private void UserInput_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!FileAutocompletePopup.IsOpen) return;
+
+            switch (e.Key)
+            {
+                case Key.Down:
+                    if (FileAutocompleteList.SelectedIndex < FileAutocompleteList.Items.Count - 1)
+                    {
+                        FileAutocompleteList.SelectedIndex++;
+                        FileAutocompleteList.ScrollIntoView(FileAutocompleteList.SelectedItem);
+                    }
+                    e.Handled = true;
+                    break;
+
+                case Key.Up:
+                    if (FileAutocompleteList.SelectedIndex > 0)
+                    {
+                        FileAutocompleteList.SelectedIndex--;
+                        FileAutocompleteList.ScrollIntoView(FileAutocompleteList.SelectedItem);
+                    }
+                    e.Handled = true;
+                    break;
+
+                case Key.Enter:
+                case Key.Tab:
+                    if (FileAutocompleteList.SelectedItem != null)
+                    {
+                        SelectAutocompleteFile(FileAutocompleteList.SelectedItem as ProjectFile);
+                        e.Handled = true;
+                    }
+                    break;
+
+                case Key.Escape:
+                    FileAutocompletePopup.IsOpen = false;
+                    _isAutocompleteActive = false;
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        private void FileAutocompleteList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Solo para feedback visual
+        }
+
+        private void FileAutocompleteList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (FileAutocompleteList.SelectedItem != null)
+            {
+                SelectAutocompleteFile(FileAutocompleteList.SelectedItem as ProjectFile);
+            }
+        }
+
+        private void SelectAutocompleteFile(ProjectFile file)
+        {
+            if (file == null || _hashPosition < 0) return;
+
+            // Cerrar popup
+            FileAutocompletePopup.IsOpen = false;
+            _isAutocompleteActive = false;
+
+            // Reemplazar #filtro con #nombrearchivo
+            var text = UserInput.Text;
+            var caretIndex = UserInput.CaretIndex;
+            var beforeHash = text.Substring(0, _hashPosition);
+            var afterCaret = caretIndex < text.Length ? text.Substring(caretIndex) : "";
+
+            // Insertar el nombre del archivo
+            UserInput.Text = beforeHash + "#" + file.FileName + " " + afterCaret.TrimStart();
+            UserInput.CaretIndex = _hashPosition + file.FileName.Length + 2;
+
+            // Adjuntar el archivo
+            AddAttachedFile(file.FullPath);
+
+            _hashPosition = -1;
+            UserInput.Focus();
+        }
+
+        private void LoadProjectFiles()
+        {
+            _allProjectFiles.Clear();
+
+            try
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                var dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
+                if (dte == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("DTE is null - cannot load project files");
+                    return;
+                }
+
+                var files = new List<ProjectFile>();
+                var extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ".cs", ".xaml", ".json", ".xml", ".js", ".ts", ".html", ".css",
+                    ".sql", ".md", ".txt", ".config", ".csproj", ".sln", ".razor",
+                    ".cshtml", ".vb", ".fs", ".py", ".java", ".cpp", ".h", ".c"
+                };
+
+                // Agregar archivo activo primero
+                try
+                {
+                    if (dte.ActiveDocument != null)
+                    {
+                        var path = dte.ActiveDocument.FullName;
+                        if (File.Exists(path))
+                        {
+                            var ext = Path.GetExtension(path).ToLower();
+                            if (extensions.Contains(ext))
+                            {
+                                files.Add(new ProjectFile
+                                {
+                                    FullPath = path,
+                                    FileName = Path.GetFileName(path),
+                                    Icon = GetFileIcon(path)
+                                });
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Agregar archivos de la solución
+                try
+                {
+                    if (dte.Solution != null && dte.Solution.Projects != null)
+                    {
+                        foreach (Project project in dte.Solution.Projects)
+                        {
+                            try
+                            {
+                                if (project.ProjectItems != null)
+                                {
+                                    AddProjectFilesRecursive(project.ProjectItems, files, extensions);
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                catch { }
+
+                // También buscar por directorio de la solución como fallback
+                try
+                {
+                    if (files.Count == 0 && dte.Solution != null && !string.IsNullOrEmpty(dte.Solution.FullName))
+                    {
+                        var solutionDir = Path.GetDirectoryName(dte.Solution.FullName);
+                        if (Directory.Exists(solutionDir))
+                        {
+                            foreach (var ext in extensions)
+                            {
+                                try
+                                {
+                                    var foundFiles = Directory.GetFiles(solutionDir, "*" + ext, SearchOption.AllDirectories);
+                                    foreach (var filePath in foundFiles.Take(100)) // Limitar a 100 por extensión
+                                    {
+                                        // Excluir carpetas bin, obj, packages, node_modules, .vs
+                                        if (filePath.Contains("\\bin\\") || filePath.Contains("\\obj\\") ||
+                                            filePath.Contains("\\packages\\") || filePath.Contains("\\node_modules\\") ||
+                                            filePath.Contains("\\.vs\\") || filePath.Contains("\\.git\\"))
+                                            continue;
+
+                                        files.Add(new ProjectFile
+                                        {
+                                            FullPath = filePath,
+                                            FileName = Path.GetFileName(filePath),
+                                            Icon = GetFileIcon(filePath)
+                                        });
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Ordenar y quitar duplicados
+                _allProjectFiles = files
+                    .GroupBy(f => f.FullPath.ToLower())
+                    .Select(g => g.First())
+                    .OrderBy(f => f.FileName)
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"Loaded {_allProjectFiles.Count} project files");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading project files: {ex.Message}");
+            }
+        }
+
+        private void AddProjectFilesRecursive(ProjectItems items, List<ProjectFile> files, HashSet<string> extensions)
+        {
+            if (items == null) return;
+
+            try
+            {
+                foreach (ProjectItem item in items)
+                {
+                    try
+                    {
+                        // Intentar obtener el archivo
+                        for (short i = 1; i <= item.FileCount; i++)
+                        {
+                            try
+                            {
+                                var filePath = item.FileNames[i];
+                                if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+                                {
+                                    var ext = Path.GetExtension(filePath);
+                                    if (extensions.Contains(ext))
+                                    {
+                                        files.Add(new ProjectFile
+                                        {
+                                            FullPath = filePath,
+                                            FileName = Path.GetFileName(filePath),
+                                            Icon = GetFileIcon(filePath)
+                                        });
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+
+                        // Recurrir en subcarpetas/items anidados
+                        if (item.ProjectItems != null && item.ProjectItems.Count > 0)
+                        {
+                            AddProjectFilesRecursive(item.ProjectItems, files, extensions);
+                        }
+
+                        // También verificar SubProject (para solution folders)
+                        try
+                        {
+                            if (item.SubProject != null && item.SubProject.ProjectItems != null)
+                            {
+                                AddProjectFilesRecursive(item.SubProject.ProjectItems, files, extensions);
+                            }
+                        }
+                        catch { }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        #endregion
 
         private void UserInput_KeyDown(object sender, KeyEventArgs e)
         {
+            // Si el popup está abierto, no procesar Ctrl+Enter
+            if (FileAutocompletePopup.IsOpen) return;
+
             if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 SendButton_Click(sender, e);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.A && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
-            {
-                AttachFileButton_Click(sender, e);
                 e.Handled = true;
             }
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Solo inicializar la primera vez
+            if (_isInitialized) return;
+            _isInitialized = true;
+
             await LoadSettingsAndModelsAsync();
+
+            // Cargar archivos del proyecto en el hilo UI
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            LoadProjectFiles();
+
             AddWelcomeMessage();
         }
 
         private void AddWelcomeMessage()
         {
-            AddAssistantMessage("¡Hola! Soy tu asistente de programación.\n\n" +
-                "💡 **Tips:**\n" +
-                "• Usa **📎 Adjuntar** para incluir archivos del proyecto\n" +
-                "• Presiona **Ctrl+Enter** para enviar\n" +
-                "• Presiona **Ctrl+Shift+A** para adjuntar archivos");
+            AddAssistantMessage("Hello! I'm your programming assistant.");
         }
 
         private async Task LoadSettingsAndModelsAsync()
@@ -72,23 +424,22 @@ namespace OllamaForVisualStudio
 
             string ollamaUrl = "http://localhost:11434";
             string selectedModel = "";
+            int timeoutSeconds = 300;
 
             try
             {
-                var package = Package.GetGlobalService(typeof(OllamaChatPackage)) as OllamaChatPackage;
-                if (package != null)
+                var options = GetOllamaOptions();
+                if (options != null)
                 {
-                    var options = package.GetDialogPage(typeof(OllamaOptions)) as OllamaOptions;
-                    if (options != null)
-                    {
-                        ollamaUrl = options.OllamaUrl;
-                        selectedModel = options.SelectedModel;
-                    }
+                    ollamaUrl = options.OllamaUrl;
+                    selectedModel = options.SelectedModel;
+                    timeoutSeconds = options.TimeoutSeconds;
                 }
             }
             catch { }
 
             _apiClient.SetBaseUrl(ollamaUrl);
+            _apiClient.SetTimeout(timeoutSeconds);
 
             try
             {
@@ -96,7 +447,7 @@ namespace OllamaForVisualStudio
 
                 if (models.Count == 0)
                 {
-                    AddSystemMessage("⚠️ No se encontraron modelos. Verifica que Ollama esté ejecutándose.");
+                    AddSystemMessage("⚠️ No models found. Make sure Ollama is running.");
                     return;
                 }
 
@@ -109,69 +460,88 @@ namespace OllamaForVisualStudio
             }
             catch (Exception ex)
             {
-                AddSystemMessage(string.Format("❌ Error conectando a Ollama: {0}", ex.Message));
+                AddSystemMessage(string.Format("❌ Error connecting to Ollama: {0}", ex.Message));
             }
+        }
+
+        private OllamaOptions GetOllamaOptions()
+        {
+            try
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                var package = Package.GetGlobalService(typeof(OllamaChatPackage)) as OllamaChatPackage;
+                if (package != null)
+                {
+                    return package.GetDialogPage(typeof(OllamaOptions)) as OllamaOptions;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private OllamaGenerationOptions GetGenerationOptions()
+        {
+            var options = GetOllamaOptions();
+            if (options != null)
+            {
+                return new OllamaGenerationOptions
+                {
+                    MaxTokens = options.MaxTokens,
+                    ContextSize = options.ContextSize,
+                    Seed = options.Seed,
+                    NumThreads = options.NumThreads,
+                    NumGpu = options.NumGpu,
+                    Temperature = options.Temperature,
+                    TopP = options.TopP,
+                    TopK = options.TopK,
+                    MinP = options.MinP,
+                    RepeatPenalty = options.RepeatPenalty,
+                    RepeatLastN = options.RepeatLastN,
+                    PresencePenalty = options.PresencePenalty,
+                    FrequencyPenalty = options.FrequencyPenalty,
+                    Mirostat = options.Mirostat,
+                    MirostatTau = options.MirostatTau,
+                    MirostatEta = options.MirostatEta,
+                    TfsZ = options.TfsZ,
+                    TypicalP = options.TypicalP,
+                    PenalizeNewline = options.PenalizeNewline,
+                    StopTokens = options.GetStopTokensArray(),
+                    KeepConversationHistory = options.KeepConversationHistory,
+                    MaxHistoryMessages = options.MaxHistoryMessages,
+                    KeepAlive = options.KeepAlive,
+                    KeepAliveSeconds = options.KeepAliveSeconds
+                };
+            }
+            return new OllamaGenerationOptions();
         }
 
         private async void RefreshModelsButton_Click(object sender, RoutedEventArgs e)
         {
             await LoadSettingsAndModelsAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            LoadProjectFiles();
+            AddSystemMessage("🔄 Models and files reloaded");
         }
 
-        #region Adjuntar Archivos
-
-        private void AttachFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            try
-            {
-                var dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
-                if (dte == null)
-                {
-                    AddSystemMessage("⚠️ No se pudo acceder al entorno de Visual Studio.");
-                    return;
-                }
-
-                // Mostrar diálogo para seleccionar archivos del proyecto
-                var dialog = new AttachFileDialog(dte);
-                if (dialog.ShowDialog() == true && dialog.SelectedFiles.Count > 0)
-                {
-                    foreach (var file in dialog.SelectedFiles)
-                    {
-                        AddAttachedFile(file);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Si falla el diálogo personalizado, usar el archivo activo
-                try
-                {
-                    var dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
-                    if (dte != null && dte.ActiveDocument != null)
-                    {
-                        var filePath = dte.ActiveDocument.FullName;
-                        AddAttachedFile(filePath);
-                    }
-                }
-                catch
-                {
-                    AddSystemMessage(string.Format("❌ Error: {0}", ex.Message));
-                }
-            }
-        }
+        #region Archivos Adjuntos
 
         private void AddAttachedFile(string filePath)
         {
-            if (_attachedFiles.Any(f => f.FilePath == filePath))
+            if (string.IsNullOrEmpty(filePath)) return;
+
+            if (_attachedFiles.Any(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
             {
-                AddSystemMessage(string.Format("ℹ️ El archivo ya está adjunto: {0}", Path.GetFileName(filePath)));
-                return;
+                return; // Ya está adjunto
             }
 
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    AddSystemMessage(string.Format("⚠️ File not found: {0}", Path.GetFileName(filePath)));
+                    return;
+                }
+
                 var content = File.ReadAllText(filePath);
                 var fileName = Path.GetFileName(filePath);
 
@@ -184,11 +554,12 @@ namespace OllamaForVisualStudio
 
                 _attachedFiles.Add(attachedFile);
                 UpdateAttachmentsUI();
-                AddSystemMessage(string.Format("📎 Archivo adjunto: {0}", fileName));
+
+                System.Diagnostics.Debug.WriteLine($"Attached file: {fileName}");
             }
             catch (Exception ex)
             {
-                AddSystemMessage(string.Format("❌ Error leyendo archivo: {0}", ex.Message));
+                AddSystemMessage(string.Format("❌ Error reading file: {0}", ex.Message));
             }
         }
 
@@ -268,12 +639,14 @@ namespace OllamaForVisualStudio
                 case ".cs": return "🔷";
                 case ".xaml": return "🎨";
                 case ".json": return "📋";
-                case ".xml": return "📄";
+                case ".xml": case ".config": return "📄";
                 case ".js": case ".ts": return "🟨";
-                case ".html": return "🌐";
+                case ".html": case ".cshtml": case ".razor": return "🌐";
                 case ".css": return "🎭";
                 case ".sql": return "🗃️";
                 case ".md": return "📝";
+                case ".csproj": case ".sln": return "📦";
+                case ".py": return "🐍";
                 default: return "📄";
             }
         }
@@ -286,6 +659,13 @@ namespace OllamaForVisualStudio
             {
                 _attachedFiles.Remove(file);
                 UpdateAttachmentsUI();
+
+                // También remover la mención del texto
+                var mention = "#" + file.FileName;
+                if (UserInput.Text.Contains(mention))
+                {
+                    UserInput.Text = UserInput.Text.Replace(mention + " ", "").Replace(mention, "").Trim();
+                }
             }
         }
 
@@ -294,27 +674,37 @@ namespace OllamaForVisualStudio
         private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
             var userMessage = UserInput.Text.Trim();
-            if (string.IsNullOrEmpty(userMessage)) return;
+            if (string.IsNullOrEmpty(userMessage) && _attachedFiles.Count == 0) return;
 
             var selectedModel = ModelComboBox.SelectedItem as string;
             if (string.IsNullOrEmpty(selectedModel))
             {
-                AddSystemMessage("⚠️ Selecciona un modelo primero.");
+                AddSystemMessage("⚠️ Select a model first.");
                 return;
             }
+
+            // Limpiar menciones de archivos del mensaje visible
+            var displayMessage = CleanFileReferences(userMessage);
 
             UserInput.Clear();
 
             var fullMessage = BuildMessageWithContext(userMessage);
-            AddUserMessage(userMessage, _attachedFiles.Select(f => f.FileName).ToList());
+            AddUserMessage(displayMessage, _attachedFiles.Select(f => f.FileName).ToList());
 
-            // Mostrar indicador de "pensando"
             var thinkingBlock = CreateThinkingIndicator();
 
             _cancellationTokenSource = new CancellationTokenSource();
             SetUIState(isProcessing: true);
 
+            // Guardar archivos adjuntos para el mensaje y luego limpiar
+            var attachedFilesCopy = _attachedFiles.ToList();
+            _attachedFiles.Clear();
+            UpdateAttachmentsUI();
+
             bool firstChunkReceived = false;
+            string finalText = "";
+            var generationOptions = GetGenerationOptions();
+            var systemPrompt = GetSystemPrompt();
 
             try
             {
@@ -323,59 +713,71 @@ namespace OllamaForVisualStudio
                     await _apiClient.StreamChatAsync(
                         selectedModel,
                         fullMessage,
-                        GetSystemPrompt(),
+                        systemPrompt,
+                        generationOptions,
                         chunk =>
                         {
-                            Dispatcher.BeginInvoke(new Action(() =>
+                            Dispatcher.Invoke(() =>
                             {
-                                // Reemplazar indicador de pensando con el bloque de respuesta al recibir el primer chunk
                                 if (!firstChunkReceived)
                                 {
                                     firstChunkReceived = true;
                                     MessagesPanel.Items.Remove(thinkingBlock);
-                                    _currentAssistantMessage = CreateAssistantMessageBlock();
+                                    CreateAssistantMessageBlock();
                                 }
                                 AppendToCurrentMessage(chunk);
-                            }));
+                            });
                         },
                         _cancellationTokenSource.Token);
                 });
+
+                finalText = _currentAssistantText;
             }
             catch (OperationCanceledException)
             {
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    if (!firstChunkReceived)
-                    {
-                        MessagesPanel.Items.Remove(thinkingBlock);
-                        _currentAssistantMessage = CreateAssistantMessageBlock();
-                    }
-                    AppendToCurrentMessage("\n\n[Cancelado]");
-                }));
+                finalText = _currentAssistantText + "\n\n[Cancelado]";
             }
             catch (Exception ex)
             {
-                Dispatcher.BeginInvoke(new Action(() =>
+                Dispatcher.Invoke(() =>
                 {
                     if (MessagesPanel.Items.Contains(thinkingBlock))
                     {
                         MessagesPanel.Items.Remove(thinkingBlock);
                     }
-
-                    if (_currentAssistantMessage == null)
+                    if (_currentAssistantContentPanel == null)
                     {
-                        _currentAssistantMessage = CreateAssistantMessageBlock();
+                        CreateAssistantMessageBlock();
                     }
-                    AppendToCurrentMessage(string.Format("❌ Error: {0}", ex.Message));
-                }));
+                });
+                finalText = _currentAssistantText + string.Format("\n\n❌ Error: {0}", ex.Message);
             }
             finally
             {
-                SetUIState(isProcessing: false);
-                _currentAssistantMessage = null;
+                if (_currentAssistantContentPanel != null && !string.IsNullOrEmpty(finalText))
+                {
+                    _currentAssistantContentPanel.Children.Clear();
 
-                _attachedFiles.Clear();
-                UpdateAttachmentsUI();
+                    var markdownContent = MarkdownRenderer.RenderMarkdown(finalText);
+
+                    var children = new List<UIElement>();
+                    foreach (UIElement child in markdownContent.Children)
+                    {
+                        children.Add(child);
+                    }
+
+                    foreach (var child in children)
+                    {
+                        markdownContent.Children.Remove(child);
+                        _currentAssistantContentPanel.Children.Add(child);
+                    }
+
+                    ScrollToBottom();
+                }
+
+                SetUIState(isProcessing: false);
+                _currentAssistantContentPanel = null;
+                _currentAssistantText = "";
 
                 if (_cancellationTokenSource != null)
                 {
@@ -384,6 +786,21 @@ namespace OllamaForVisualStudio
                 }
             }
         }
+
+        private string CleanFileReferences(string text)
+        {
+            var result = text;
+            foreach (var file in _attachedFiles)
+            {
+                result = result.Replace("#" + file.FileName, "").Trim();
+            }
+            while (result.Contains("  "))
+            {
+                result = result.Replace("  ", " ");
+            }
+            return result.Trim();
+        }
+
         private Border CreateThinkingIndicator()
         {
             var border = new Border
@@ -399,24 +816,14 @@ namespace OllamaForVisualStudio
 
             var dots = new TextBlock
             {
-                Text = "🤖 Pensando",
+                Text = "🤖 Thinking...",
                 Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 13,
                 FontStyle = FontStyles.Italic
             };
 
-            // Animación simple de puntos
-            var dotsAnimation = new TextBlock
-            {
-                Text = "...",
-                Foreground = new SolidColorBrush(Color.FromRgb(150, 150, 150)),
-                FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 13
-            };
-
             stack.Children.Add(dots);
-            stack.Children.Add(dotsAnimation);
             border.Child = stack;
 
             MessagesPanel.Items.Add(border);
@@ -424,23 +831,26 @@ namespace OllamaForVisualStudio
 
             return border;
         }
+
         private string BuildMessageWithContext(string userMessage)
         {
             if (_attachedFiles.Count == 0)
                 return userMessage;
 
             var contextBuilder = new System.Text.StringBuilder();
-            contextBuilder.AppendLine("Contexto de archivos adjuntos:");
+            contextBuilder.AppendLine("Context files:");
             contextBuilder.AppendLine();
 
             foreach (var file in _attachedFiles)
             {
-                contextBuilder.AppendLine(string.Format("--- Archivo: {0} ---", file.FileName));
+                contextBuilder.AppendLine(string.Format("=== {0} ===", file.FileName));
+                contextBuilder.AppendLine("```");
                 contextBuilder.AppendLine(file.Content);
+                contextBuilder.AppendLine("```");
                 contextBuilder.AppendLine();
             }
 
-            contextBuilder.AppendLine("--- Pregunta del usuario ---");
+            contextBuilder.AppendLine("User question:");
             contextBuilder.AppendLine(userMessage);
 
             return contextBuilder.ToString();
@@ -471,7 +881,6 @@ namespace OllamaForVisualStudio
 
             stack.Children.Add(header);
 
-            // Mostrar archivos adjuntos
             if (attachedFileNames != null && attachedFileNames.Count > 0)
             {
                 var filesText = new TextBlock
@@ -488,7 +897,7 @@ namespace OllamaForVisualStudio
 
             var content = new TextBlock
             {
-                Text = message,
+                Text = string.IsNullOrWhiteSpace(message) ? "(archivos adjuntos)" : message,
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = new SolidColorBrush(Colors.White),
                 FontFamily = new FontFamily("Segoe UI"),
@@ -504,11 +913,12 @@ namespace OllamaForVisualStudio
 
         private void AddAssistantMessage(string message)
         {
-            var block = CreateAssistantMessageBlock();
-            block.Text = message;
+            CreateAssistantMessageBlock();
+            _currentAssistantText = message;
+            FinalizeCurrentMessage();
         }
 
-        private TextBlock CreateAssistantMessageBlock()
+        private StackPanel CreateAssistantMessageBlock()
         {
             var border = new Border
             {
@@ -530,22 +940,19 @@ namespace OllamaForVisualStudio
                 Margin = new Thickness(0, 0, 0, 4)
             };
 
-            var content = new TextBlock
-            {
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204)),
-                FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 13
-            };
+            var contentPanel = new StackPanel();
 
             stack.Children.Add(header);
-            stack.Children.Add(content);
+            stack.Children.Add(contentPanel);
             border.Child = stack;
 
             MessagesPanel.Items.Add(border);
             ScrollToBottom();
 
-            return content;
+            _currentAssistantText = "";
+            _currentAssistantContentPanel = contentPanel;
+
+            return contentPanel;
         }
 
         private void AddSystemMessage(string message)
@@ -576,9 +983,47 @@ namespace OllamaForVisualStudio
 
         private void AppendToCurrentMessage(string text)
         {
-            if (_currentAssistantMessage != null)
+            if (_currentAssistantContentPanel != null)
             {
-                _currentAssistantMessage.Text += text;
+                _currentAssistantText += text;
+
+                _currentAssistantContentPanel.Children.Clear();
+                var tempText = new TextBox
+                {
+                    Text = _currentAssistantText,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204)),
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    IsReadOnly = true,
+                    FontFamily = new FontFamily("Segoe UI"),
+                    FontSize = 13
+                };
+                _currentAssistantContentPanel.Children.Add(tempText);
+                ScrollToBottom();
+            }
+        }
+
+        private void FinalizeCurrentMessage()
+        {
+            if (_currentAssistantContentPanel != null && !string.IsNullOrEmpty(_currentAssistantText))
+            {
+                _currentAssistantContentPanel.Children.Clear();
+
+                var markdownContent = MarkdownRenderer.RenderMarkdown(_currentAssistantText);
+
+                var children = new List<UIElement>();
+                foreach (UIElement child in markdownContent.Children)
+                {
+                    children.Add(child);
+                }
+
+                foreach (var child in children)
+                {
+                    markdownContent.Children.Remove(child);
+                    _currentAssistantContentPanel.Children.Add(child);
+                }
+
                 ScrollToBottom();
             }
         }
@@ -588,23 +1033,14 @@ namespace OllamaForVisualStudio
             ChatScrollViewer.ScrollToEnd();
         }
 
-        private static string GetSystemPrompt()
+        private string GetSystemPrompt()
         {
-            try
+            var options = GetOllamaOptions();
+            if (options != null)
             {
-                ThreadHelper.ThrowIfNotOnUIThread();
-                var package = Package.GetGlobalService(typeof(OllamaChatPackage)) as OllamaChatPackage;
-                if (package != null)
-                {
-                    var options = package.GetDialogPage(typeof(OllamaOptions)) as OllamaOptions;
-                    if (options != null)
-                    {
-                        return options.SystemPrompt;
-                    }
-                }
+                return options.SystemPrompt;
             }
-            catch { }
-            return "Eres un asistente de programación experto. Responde de forma clara y concisa. Cuando analices código, proporciona sugerencias útiles.";
+            return "You are a programming expert assistant. Respond clearly and concisely.";
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
@@ -620,7 +1056,14 @@ namespace OllamaForVisualStudio
             MessagesPanel.Items.Clear();
             _attachedFiles.Clear();
             UpdateAttachmentsUI();
+            _apiClient.ClearHistory();
+
+            // Recargar archivos del proyecto
+            ThreadHelper.ThrowIfNotOnUIThread();
+            LoadProjectFiles();
+
             AddWelcomeMessage();
+            AddSystemMessage("🧹 Cleared, the model will not remember previous conversations.");
         }
 
         private void SetUIState(bool isProcessing)
@@ -630,7 +1073,6 @@ namespace OllamaForVisualStudio
             StopButton.IsEnabled = isProcessing;
             StopButton.Visibility = isProcessing ? Visibility.Visible : Visibility.Collapsed;
             UserInput.IsEnabled = !isProcessing;
-            AttachFileButton.IsEnabled = !isProcessing;
         }
     }
 
@@ -639,5 +1081,17 @@ namespace OllamaForVisualStudio
         public string FilePath { get; set; }
         public string FileName { get; set; }
         public string Content { get; set; }
+    }
+
+    public class ProjectFile
+    {
+        public string FullPath { get; set; }
+        public string FileName { get; set; }
+        public string Icon { get; set; }
+
+        public override string ToString()
+        {
+            return Icon + " " + FileName;
+        }
     }
 }
