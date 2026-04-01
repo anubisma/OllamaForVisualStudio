@@ -6,6 +6,7 @@ Una extensión para Visual Studio 2022/2026 que integra modelos de IA locales de
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
+[Download it from visual studio marketplace](https://marketplace.visualstudio.com/items?itemName=Manubis.Ollamafvs01)
 ---
 
 ## ✨ Características
