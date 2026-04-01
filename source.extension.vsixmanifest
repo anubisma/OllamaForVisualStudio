@@ -1,23 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-	<Metadata>
-		<Identity Id="OllamaForVisualStudio.5ee5829f-3713-4dcf-a265-21b0c1cc2978" Version="1.0" Language="es-ES" Publisher="Company" />
-		<DisplayName>Ollama for Visual Studio</DisplayName>
-		<Description xml:space="preserve">Integra tus modelos locales de Ollama en Visual Studio.</Description>
-		<Tags>ai, ollama, chat, code assistant, llm, local ai</Tags>
-	</Metadata>
-	<Installation>
-		<InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 19.0)">
-			<ProductArchitecture>amd64</ProductArchitecture>
-		</InstallationTarget>
-	</Installation>
-	<Dependencies>
-		<Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.8,)" />
-	</Dependencies>
-	<Prerequisites>
-		<Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0, )" DisplayName="Visual Studio core editor" />
-	</Prerequisites>
-	<Assets>
-		<Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-	</Assets>
+    <Metadata>
+        <Identity Id="OllamaForVisualStudio.5ee5829f-3713-4dcf-a265-21b0c1cc2978" Version="1.1" Language="es-ES" Publisher="Manubis" />
+        <DisplayName>Ollama for Visual Studio</DisplayName>
+        <Description xml:space="preserve">Integrate your local model from Ollama in Visual Studio.</Description>
+        <License>The MIT License (MIT).txt</License>
+        <GettingStartedGuide>https://github.com/anubisma/OllamaForVisualStudio</GettingStartedGuide>
+        <ReleaseNotes>https://github.com/anubisma/OllamaForVisualStudio/releases/tag/1.0</ReleaseNotes>
+        <Icon>ollama.png</Icon>
+        <PreviewImage>Captura de pantalla 2026-03-29 164210.png</PreviewImage>
+        <Tags>ai, ollama, chat, code assistant, llm, local ai</Tags>
+    </Metadata>
+    <Installation>
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 19.0)">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+    </Installation>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.8,)" />
+    </Dependencies>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0, )" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    </Assets>
 </PackageManifest>
