@@ -1,88 +1,109 @@
-🦙 Ollama for Visual Studio
-A Visual Studio 2022/2026 extension that integrates local AI models from Ollama directly into your IDE. Chat with models like Llama 3, CodeLlama, DeepSeek Coder, and more, all running locally on your machine.
+# 🦙 Ollama for Visual Studio
 
-Visual Studio Marketplace Version
-License
-Platform
+Una extensión para Visual Studio 2022/2026 que integra modelos de IA locales de [Ollama](https://ollama.ai) directamente en tu IDE. Chatea con modelos como Llama 3, CodeLlama, DeepSeek Coder y más, todo ejecutándose localmente en tu máquina.
 
-Download it from visual studio marketplace
+![Visual Studio Marketplace Version](https://img.shields.io/badge/VS-2022%20%7C%202026-purple)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
-✨ Features
-🤖 Local AI Chat - Use Ollama models without sending code to the cloud
-📎 Attach Files - Include files from your project as context
-🎨 Modern Interface - Design similar to GitHub Copilot Chat
-🌙 Adaptive Theme - Adapts to Visual Studio's light/dark theme
-⚡ Real-time Streaming - See responses as they are generated
-🔧 Configurable - Customize the URL, model, and system prompt
-📋 Requirements
-Required Software
-Requirement
-Version
-Link
-Visual Studio	2022 or 2026	Download
-Ollama	Latest version	Download
-.NET Framework	4.8	Included in Windows 10/11
+---
 
-Recommended Ollama models for coding
-bash
+## ✨ Características
 
-ollama pull codellama
-ollama pull deepseek-coder-v2:16b
-ollama pull qwen2.5-coder:7b
-General models
-bash
+- 🤖 **Chat con IA local** - Usa modelos de Ollama sin enviar código a la nube
+- 📎 **Adjuntar archivos** - Incluye archivos de tu proyecto como contexto
+- 🎨 **Interfaz moderna** - Diseño similar a GitHub Copilot Chat
+- 🌙 **Tema adaptativo** - Se adapta al tema claro/oscuro de Visual Studio
+- ⚡ **Streaming en tiempo real** - Ve las respuestas mientras se generan
+- 🔧 **Configurable** - Personaliza la URL, modelo y system prompt
 
-ollama pull llama3:8b
-ollama pull llama3.1
-🚀 Installation
-Option 1: From GitHub Releases
-Go to Releases
-Download the OllamaForVisualStudio.vsix file
-Double-click the file to install
-Restart Visual Studio
-Option 2: Build from source
-Clone the repository
-bash
+---
+
+## 📋 Requisitos
+
+### Software necesario
+
+| Requisito | Versión | Enlace |
+|-----------|---------|--------|
+| Visual Studio | 2022 o 2026 | [Descargar](https://visualstudio.microsoft.com/) |
+| Ollama | Última versión | [Descargar](https://ollama.ai/download) |
+| .NET Framework | 4.8 | Incluido en Windows 10/11 |
+
+### Modelos de Ollama recomendados para programación
+ollama pull codellama ollama pull deepseek-coder-v2:16b ollama pull qwen2.5-coder:7b
+
+### Modelos generales
+ollama pull llama3:8b ollama pull llama3.1
+
+---
+
+## 🚀 Instalación
+
+### Opción 1: Desde GitHub Releases
+
+1. Ve a [Releases](https://github.com/anubisma/OllamaForVisualStudio/releases)
+2. Descarga el archivo `OllamaForVisualStudio.vsix`
+3. Doble clic en el archivo para instalar
+4. Reinicia Visual Studio
+
+### Opción 2: Compilar desde código fuente
+## Clonar el repositorio
 
 git clone https://github.com/anubisma/OllamaForVisualStudio.git
+
 cd OllamaForVisualStudio
-Open in Visual Studio and build (F5 for debug, Ctrl+Shift+B for release).
 
-🎯 Usage
-1. Start Ollama
-Before using the extension, make sure Ollama is running:
+Abrir en Visual Studio y compilar (F5 para debug, Ctrl+Shift+B para release)
 
-bash
 
+---
+
+## 🎯 Uso
+
+### 1. Iniciar Ollama
+
+Antes de usar la extensión, asegúrate de que Ollama esté ejecutándose:
 ollama serve
-2. Open Ollama Chat
-In Visual Studio, go to:
 
-View > Ollama Chat
 
-Or use Quick Launch (Ctrl+Q) and type "Ollama Chat".
+### 2. Abrir Ollama Chat
 
-3. Select a model
-Use the dropdown at the top to select the model you want to use.
+En Visual Studio, ve a:
 
-4. Chat
-Type your question and press Send or Ctrl+Enter.
+**View > Ollama Chat**
 
-5. Attach files (optional)
-Click 📎 Attach or press Ctrl+Shift+A to include files from your project as context.
+O usa la búsqueda rápida (`Ctrl+Q`) y escribe "Ollama Chat".
 
-⚙️ Configuration
-Go to Tools > Options > Ollama to configure:
+### 3. Seleccionar un modelo
 
-Option
-Description
-Default Value
-Ollama URL	Ollama server address	http://localhost:11434
-Selected Model	Model to use by default	llama3
-System Prompt	Custom instructions for the model	Programming Assistant
-Max Tokens	Token limit in responses	2048
+Usa el desplegable en la parte superior para seleccionar el modelo que quieres usar.
 
-🛠️ Development
-Development Requirements
-Visual Studio 2022/2026 with the "Visual Studio extension development" workload
-.NET Framework 4.8 SDK
+### 4. Chatear
+
+Escribe tu pregunta y presiona **Enviar** o `Ctrl+Enter`.
+
+### 5. Adjuntar archivos (opcional)
+
+Haz clic en **📎 Adjuntar** o presiona `Ctrl+Shift+A` para incluir archivos de tu proyecto como contexto.
+
+---
+
+## ⚙️ Configuración
+
+Ve a **Tools > Options > Ollama** para configurar:
+
+| Opción | Descripción | Valor por defecto |
+|--------|-------------|-------------------|
+| **URL de Ollama** | Dirección del servidor Ollama | `http://localhost:11434` |
+| **Modelo seleccionado** | Modelo a usar por defecto | `llama3` |
+| **System Prompt** | Instrucciones personalizadas para el modelo | Asistente de programación |
+| **Máximo de tokens** | Límite de tokens en respuestas | `2048` |
+
+---
+
+## 🛠️ Desarrollo
+
+### Requisitos de desarrollo
+
+- Visual Studio 2022/2026 con la carga de trabajo **"Desarrollo de extensiones de Visual Studio"**
+- .NET Framework 4.8 SDK
