@@ -11,153 +11,153 @@ namespace OllamaForVisualStudio
 {
     public class OllamaOptions : DialogPage
     {
-        // ==================== CONEXIÓN ====================
-        [Category("1. Conexión")]
-        [DisplayName("URL de Ollama")]
-        [Description("La URL donde está ejecutándose el servidor de Ollama (ej: http://localhost:11434)")]
+        // ==================== CONNECTION ====================
+        [Category("1. Connection")]
+        [DisplayName("Ollama URL")]
+        [Description("URL where the Ollama server is running (e.g. http://localhost:11434)")]
         public string OllamaUrl { get; set; } = "http://localhost:11434";
 
-        [Category("1. Conexión")]
-        [DisplayName("Modelo seleccionado")]
-        [Description("Nombre del modelo de Ollama a utilizar por defecto")]
+        [Category("1. Connection")]
+        [DisplayName("Selected model")]
+        [Description("Name of the Ollama model to use by default")]
         public string SelectedModel { get; set; } = "llama3";
 
-        [Category("1. Conexión")]
-        [DisplayName("Timeout (segundos)")]
-        [Description("Tiempo máximo de espera para respuestas del servidor")]
+        [Category("1. Connection")]
+        [DisplayName("Timeout (seconds)")]
+        [Description("Maximum waiting time for server responses")]
         public int TimeoutSeconds { get; set; } = 300;
 
-        // ==================== GENERACIÓN ====================
-        [Category("2. Generación")]
-        [DisplayName("Máximo de tokens (num_predict)")]
-        [Description("Número máximo de tokens a generar en la respuesta. -1 = ilimitado, -2 = llenar contexto")]
+        // ==================== GENERATION ====================
+        [Category("2. Generation")]
+        [DisplayName("Max tokens (num_predict)")]
+        [Description("Maximum number of tokens to generate in the response. -1 = unlimited, -2 = fill context")]
         public int MaxTokens { get; set; } = 2048;
 
-        [Category("2. Generación")]
-        [DisplayName("Tamaño de contexto (num_ctx)")]
-        [Description("Tamaño de la ventana de contexto para generar el siguiente token (default: 2048)")]
+        [Category("2. Generation")]
+        [DisplayName("Context size (num_ctx)")]
+        [Description("Context window size for generating the next token (default: 2048)")]
         public int ContextSize { get; set; } = 4096;
 
-        [Category("2. Generación")]
+        [Category("2. Generation")]
         [DisplayName("Seed")]
-        [Description("Semilla para generación reproducible. 0 = aleatorio")]
+        [Description("Seed for reproducible generation. 0 = random")]
         public int Seed { get; set; } = 0;
 
-        [Category("2. Generación")]
-        [DisplayName("Número de hilos (num_thread)")]
-        [Description("Número de hilos CPU a usar. 0 = automático")]
+        [Category("2. Generation")]
+        [DisplayName("Number of threads (num_thread)")]
+        [Description("CPU threads to use. 0 = automatic")]
         public int NumThreads { get; set; } = 0;
 
-        [Category("2. Generación")]
-        [DisplayName("Número de capas GPU (num_gpu)")]
-        [Description("Número de capas a cargar en GPU. 0 = solo CPU, -1 = todas")]
+        [Category("2. Generation")]
+        [DisplayName("GPU layers (num_gpu)")]
+        [Description("Number of layers to load on GPU. 0 = CPU only, -1 = all")]
         public int NumGpu { get; set; } = -1;
 
-        // ==================== CREATIVIDAD (SAMPLING) ====================
-        [Category("3. Creatividad")]
-        [DisplayName("Temperatura")]
-        [Description("Controla la creatividad (0.0 = determinista, 2.0 = muy creativo). Recomendado: 0.7-0.8")]
+        // ==================== CREATIVITY (SAMPLING) ====================
+        [Category("3. Creativity")]
+        [DisplayName("Temperature")]
+        [Description("Controls randomness (0.0 = deterministic, 2.0 = very creative). Recommended: 0.7-0.8")]
         public double Temperature { get; set; } = 0.7;
 
-        [Category("3. Creatividad")]
+        [Category("3. Creativity")]
         [DisplayName("Top P (nucleus sampling)")]
-        [Description("Probabilidad acumulada para nucleus sampling (0.0-1.0). Valores bajos = respuestas más enfocadas")]
+        [Description("Cumulative probability cutoff for nucleus sampling (0.0-1.0). Lower = more focused responses")]
         public double TopP { get; set; } = 0.9;
 
-        [Category("3. Creatividad")]
+        [Category("3. Creativity")]
         [DisplayName("Top K")]
-        [Description("Limita los tokens candidatos a los K más probables. 0 = deshabilitado")]
+        [Description("Limits token candidates to the top K most probable. 0 = disabled")]
         public int TopK { get; set; } = 40;
 
-        [Category("3. Creatividad")]
+        [Category("3. Creativity")]
         [DisplayName("Min P")]
-        [Description("Probabilidad mínima relativa al token más probable (0.0-1.0)")]
+        [Description("Minimum probability relative to the most likely token (0.0-1.0)")]
         public double MinP { get; set; } = 0.0;
 
-        // ==================== PENALIZACIONES ====================
-        [Category("4. Penalizaciones")]
-        [DisplayName("Penalización de repetición")]
-        [Description("Penaliza la repetición de tokens (1.0 = sin penalización, >1.0 = menos repetición)")]
+        // ==================== PENALTIES ====================
+        [Category("4. Penalties")]
+        [DisplayName("Repeat penalty")]
+        [Description("Penalizes repeated tokens (1.0 = no penalty, >1.0 = less repetition)")]
         public double RepeatPenalty { get; set; } = 1.1;
 
-        [Category("4. Penalizaciones")]
-        [DisplayName("Ventana de repetición (repeat_last_n)")]
-        [Description("Tokens anteriores a considerar para penalización. 0 = deshabilitado, -1 = num_ctx")]
+        [Category("4. Penalties")]
+        [DisplayName("Repeat window (repeat_last_n)")]
+        [Description("Number of previous tokens to consider for penalty. 0 = disabled, -1 = num_ctx")]
         public int RepeatLastN { get; set; } = 64;
 
-        [Category("4. Penalizaciones")]
-        [DisplayName("Penalización de presencia")]
-        [Description("Penaliza tokens que ya aparecieron (0.0-1.0)")]
+        [Category("4. Penalties")]
+        [DisplayName("Presence penalty")]
+        [Description("Penalizes tokens that already appeared (0.0-1.0)")]
         public double PresencePenalty { get; set; } = 0.0;
 
-        [Category("4. Penalizaciones")]
-        [DisplayName("Penalización de frecuencia")]
-        [Description("Penaliza tokens según su frecuencia (0.0-1.0)")]
+        [Category("4. Penalties")]
+        [DisplayName("Frequency penalty")]
+        [Description("Penalizes tokens based on frequency (0.0-1.0)")]
         public double FrequencyPenalty { get; set; } = 0.0;
 
         // ==================== MIROSTAT ====================
         [Category("5. Mirostat")]
-        [DisplayName("Modo Mirostat")]
-        [Description("Algoritmo de muestreo adaptativo. 0 = deshabilitado, 1 = Mirostat, 2 = Mirostat 2.0")]
+        [DisplayName("Mirostat mode")]
+        [Description("Adaptive sampling algorithm. 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0")]
         public int Mirostat { get; set; } = 0;
 
         [Category("5. Mirostat")]
         [DisplayName("Mirostat Tau")]
-        [Description("Objetivo de perplejidad para Mirostat (default: 5.0)")]
+        [Description("Target perplexity for Mirostat (default: 5.0)")]
         public double MirostatTau { get; set; } = 5.0;
 
         [Category("5. Mirostat")]
         [DisplayName("Mirostat Eta")]
-        [Description("Tasa de aprendizaje de Mirostat (default: 0.1)")]
+        [Description("Mirostat learning rate (default: 0.1)")]
         public double MirostatEta { get; set; } = 0.1;
 
-        // ==================== CONTEXTO/MEMORIA ====================
-        [Category("6. Memoria")]
-        [DisplayName("Mantener historial de conversación")]
-        [Description("Si está activado, el modelo recordará mensajes anteriores de la conversación")]
+        // ==================== CONTEXT / MEMORY ====================
+        [Category("6. Memory")]
+        [DisplayName("Keep conversation history")]
+        [Description("If enabled, the model remembers previous messages in the conversation")]
         public bool KeepConversationHistory { get; set; } = true;
 
-        [Category("6. Memoria")]
-        [DisplayName("Máximo de mensajes en historial")]
-        [Description("Número máximo de mensajes (pares usuario/asistente) a mantener en memoria")]
+        [Category("6. Memory")]
+        [DisplayName("Max history messages")]
+        [Description("Maximum number of message pairs (user/assistant) to keep in memory")]
         public int MaxHistoryMessages { get; set; } = 20;
 
-        [Category("6. Memoria")]
-        [DisplayName("Mantener contexto entre sesiones")]
-        [Description("Mantiene el contexto del modelo cargado en memoria (más rápido)")]
+        [Category("6. Memory")]
+        [DisplayName("Keep context between sessions")]
+        [Description("Keeps the model loaded in memory (faster responses)")]
         public bool KeepAlive { get; set; } = true;
 
-        [Category("6. Memoria")]
-        [DisplayName("Tiempo Keep Alive (segundos)")]
-        [Description("Tiempo en segundos que el modelo permanece cargado. -1 = indefinido, 0 = descargar inmediatamente")]
+        [Category("6. Memory")]
+        [DisplayName("Keep alive time (seconds)")]
+        [Description("Time in seconds the model stays loaded. -1 = indefinite, 0 = unload immediately")]
         public int KeepAliveSeconds { get; set; } = 300;
 
-        // ==================== TOKENS DE PARADA ====================
+        // ==================== STOP TOKENS ====================
         [Category("7. Control")]
-        [DisplayName("Tokens de parada")]
-        [Description("Secuencias que detienen la generación (separadas por coma). Ej: </s>,<|end|>,###")]
+        [DisplayName("Stop tokens")]
+        [Description("Sequences that stop generation (comma-separated). Example: </s>,<|end|>,###")]
         public string StopTokens { get; set; } = "";
 
         [Category("7. Control")]
-        [DisplayName("Penalizar nueva línea")]
-        [Description("Penaliza tokens de nueva línea en la generación")]
+        [DisplayName("Penalize newline")]
+        [Description("Penalizes newline tokens during generation")]
         public bool PenalizeNewline { get; set; } = false;
 
-        // ==================== TFS/TÍPICO ====================
-        [Category("8. Avanzado")]
+        // ==================== ADVANCED ====================
+        [Category("8. Advanced")]
         [DisplayName("TFS Z (Tail Free Sampling)")]
-        [Description("Tail free sampling parameter (1.0 = deshabilitado)")]
+        [Description("Tail free sampling parameter (1.0 = disabled)")]
         public double TfsZ { get; set; } = 1.0;
 
-        [Category("8. Avanzado")]
+        [Category("8. Advanced")]
         [DisplayName("Typical P")]
-        [Description("Locally typical sampling (1.0 = deshabilitado)")]
+        [Description("Locally typical sampling (1.0 = disabled)")]
         public double TypicalP { get; set; } = 1.0;
 
         // ==================== SYSTEM PROMPT ====================
         [Category("9. System Prompt")]
         [DisplayName("System Prompt")]
-        [Description("Instrucciones del sistema para definir el comportamiento del modelo")]
+        [Description("System instructions defining model behavior")]
         [Editor(typeof(MultilineStringEditor), typeof(UITypeEditor))]
         public string SystemPrompt { get; set; } = DefaultSystemPrompt;
 
@@ -179,12 +179,12 @@ RESPONSE FORMAT:
 - Be concise but complete
 
 BEHAVIOR:
-- ALWAYS, ALWAYS, ALWAYS answer in the language the user is interacting with you, regardless of the prompt language
+- ALWAYS answer in the language the user is using
 - If you don't know something, admit it honestly
-- Ask for clarification if the request is ambiguous
+- Ask for clarification if needed
 - Consider Visual Studio and .NET context when relevant";
 
-        // Método para obtener stop tokens como array
+        // Get stop tokens as array
         public string[] GetStopTokensArray()
         {
             if (string.IsNullOrWhiteSpace(StopTokens))
@@ -193,7 +193,7 @@ BEHAVIOR:
             return StopTokens.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        // Método para obtener keep_alive en formato Ollama
+        // Get keep_alive value in Ollama format
         public string GetKeepAliveValue()
         {
             if (!KeepAlive) return "0";
@@ -203,7 +203,7 @@ BEHAVIOR:
     }
 
     /// <summary>
-    /// Editor personalizado para texto multilínea grande
+    /// Custom editor for large multiline text
     /// </summary>
     public class MultilineStringEditor : UITypeEditor
     {
@@ -219,7 +219,7 @@ BEHAVIOR:
 
             using (var form = new Form())
             {
-                form.Text = "Editar System Prompt";
+                form.Text = "Edit System Prompt";
                 form.Size = new System.Drawing.Size(700, 500);
                 form.StartPosition = FormStartPosition.CenterParent;
                 form.MinimizeBox = false;
@@ -246,7 +246,7 @@ BEHAVIOR:
 
                 var okButton = new System.Windows.Forms.Button
                 {
-                    Text = "Aceptar",
+                    Text = "OK",
                     DialogResult = DialogResult.OK,
                     Size = new System.Drawing.Size(90, 30),
                     Location = new System.Drawing.Point(490, 8)
@@ -255,7 +255,7 @@ BEHAVIOR:
 
                 var cancelButton = new System.Windows.Forms.Button
                 {
-                    Text = "Cancelar",
+                    Text = "Cancel",
                     DialogResult = DialogResult.Cancel,
                     Size = new System.Drawing.Size(90, 30),
                     Location = new System.Drawing.Point(590, 8)

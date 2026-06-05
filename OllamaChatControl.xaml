@@ -48,7 +48,7 @@
             </Setter>
         </Style>
 
-        <!-- Estilo para el botón de enviar (azul) -->
+        <!-- Style for the submit button (Blue) -->
         <Style x:Key="SendButton" TargetType="Button">
             <Setter Property="Background" Value="#0E639C"/>
             <Setter Property="Foreground" Value="White"/>
@@ -419,7 +419,7 @@
 
                         <Button x:Name="SendButton" 
                                 Style="{StaticResource SendButton}"
-                                Content="Enviar ➤" 
+                                Content="Send ➤" 
                                 FontWeight="SemiBold"
                                 Click="SendButton_Click"/>
                     </StackPanel>
